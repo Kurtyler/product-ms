@@ -16,19 +16,16 @@ import javax.persistence.*;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_id")
     private Integer orderId;
 
-    @Column(name = "customer_id")
-    private Integer customerId;
+    @ManyToOne
+    private Customer customers;
 
     @ManyToOne
     private Product products;
 
-    @Column(name = "quantity")
     private Integer quantity;
 
-    @Column(name = "status")
     private String status;
 
 

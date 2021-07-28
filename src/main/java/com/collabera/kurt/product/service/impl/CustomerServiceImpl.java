@@ -26,6 +26,11 @@ public class CustomerServiceImpl implements CustomerService {
         this.kafkaProducerService = kafkaProducerService;
     }
 
+    /**
+     * Customer Service to add product
+     * @param customerRequest
+     * @return
+     */
     @Override
     public CustomerResponse addCustomer(final CustomerRequest customerRequest) {
         CustomerResponse customerResponse = new CustomerResponse();
@@ -45,6 +50,12 @@ public class CustomerServiceImpl implements CustomerService {
         return customerResponse;
     }
 
+    /**
+     * Customer Service to fetch customer by Customer Id
+     * @param customerId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public CustomerResponse getCustomerById(final Integer customerId) throws NotFoundException {
         final CustomerResponse customerResponse = new CustomerResponse();
@@ -70,6 +81,10 @@ public class CustomerServiceImpl implements CustomerService {
         return customerResponse;
     }
 
+    /**
+     * Customer Service to fetch all Customers
+     * @return
+     */
     @Override
     public List<CustomerResponse> getCustomers() {
         kafkaProducerService.publishToTopic("Attempting to fetch all customers");
@@ -80,6 +95,13 @@ public class CustomerServiceImpl implements CustomerService {
         return customerResponses;
     }
 
+    /**
+     * Customer Service to update customer by Customer Id
+     * @param customerRequest
+     * @param customerId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public CustomerResponse updateCustomer(final CustomerRequest customerRequest, final Integer customerId)
             throws NotFoundException {

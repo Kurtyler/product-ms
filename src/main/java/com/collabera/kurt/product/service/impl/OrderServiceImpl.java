@@ -4,6 +4,7 @@ import com.collabera.kurt.product.dto.request.OrderRequest;
 import com.collabera.kurt.product.dto.response.CustomerResponse;
 import com.collabera.kurt.product.dto.response.OrderResponse;
 import com.collabera.kurt.product.dto.response.ProductResponse;
+import com.collabera.kurt.product.entity.Customer;
 import com.collabera.kurt.product.entity.Order;
 import com.collabera.kurt.product.entity.Product;
 import com.collabera.kurt.product.enums.OrderStatusEnum;
@@ -44,6 +45,12 @@ public class OrderServiceImpl implements OrderService {
         this.kafkaProducerService = kafkaProducerService;
     }
 
+    /**
+     * Order Service to add order
+     * @param orderRequest
+     * @return
+     * @throws InvalidOrderException
+     */
     @Override
     public OrderResponse addOrder(final OrderRequest orderRequest) throws InvalidOrderException {
         final OrderResponse orderResponse;
@@ -55,7 +62,11 @@ public class OrderServiceImpl implements OrderService {
                 throw new InvalidInputException("Invalid Quantity: " + orderRequest.getQuantity());
             }
             orderResponse = new OrderResponse(orderRepository.save(Order.builder()
-                    .customerId(customerResponse.getCustomerId())
+                    .customers(Customer.builder().customerId(customerResponse.getCustomerId())
+                            .name(customerResponse.getName())
+                            .email(customerResponse.getEmail())
+                            .gender(customerResponse.getGender())
+                            .build())
                     .quantity(orderRequest.getQuantity())
                     .products(Product.builder().productId(product.getProductId())
                             .productName(product.getProductName())
@@ -72,6 +83,12 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    /**
+     * Order Service to fetch order by Order Id
+     * @param orderId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public OrderResponse getOrderById(final Integer orderId) throws NotFoundException {
         final OrderResponse orderResponse = new OrderResponse();
@@ -80,7 +97,7 @@ public class OrderServiceImpl implements OrderService {
             final Optional<Order> orderData = orderRepository.findById(orderId);
             if (orderData.isPresent()) {
                 orderResponse.setOrderId(orderData.get().getOrderId());
-                orderResponse.setCustomerId(orderData.get().getCustomerId());
+                orderResponse.setCustomer(orderData.get().getCustomers());
                 orderResponse.setProduct(orderData.get().getProducts());
                 orderResponse.setQuantity(orderData.get().getQuantity());
                 orderResponse.setStatus(orderData.get().getStatus());
@@ -98,6 +115,12 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    /**
+     * Order Service to fetch order/s by Customer Id
+     * @param customerId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public List<OrderResponse> getOrderByCustomerId(final Integer customerId) throws NotFoundException {
         kafkaProducerService.publishToTopic(
@@ -105,7 +128,7 @@ public class OrderServiceImpl implements OrderService {
         final List<OrderResponse> orderResponseList = new ArrayList<>();
         try {
             final CustomerResponse customerResponse = customerService.getCustomerById(customerId);
-            List<Order> orderData = orderRepository.findOrderByCustomerId(customerResponse.getCustomerId());
+            List<Order> orderData = orderRepository.findOrderByCustomersCustomerId(customerResponse.getCustomerId());
             if (!orderData.isEmpty()) {
                 orderData.forEach(order -> orderResponseList.add(new OrderResponse(order)));
             } else {
@@ -122,6 +145,12 @@ public class OrderServiceImpl implements OrderService {
         return orderResponseList;
     }
 
+    /**
+     * Order Service to accept order by Order Id
+     * @param orderId
+     * @return
+     * @throws InvalidOrderException
+     */
     @Override
     public OrderResponse acceptOrderById(final Integer orderId) throws InvalidOrderException {
         final OrderResponse orderResponse;
@@ -130,13 +159,13 @@ public class OrderServiceImpl implements OrderService {
             orderResponse = this.getOrderById(orderId);
             if (orderResponse.getStatus().equals(OrderStatusEnum.PENDING.toString())) {
                 orderResponse.setOrderId(orderId);
-                orderResponse.setCustomerId(orderResponse.getCustomerId());
+                orderResponse.setCustomer(orderResponse.getCustomer());
                 orderResponse.setProduct(orderResponse.getProduct());
                 orderResponse.setQuantity(orderResponse.getQuantity());
                 orderResponse.setStatus(OrderStatusEnum.ACCEPTED.toString());
                 orderRepository.save(Order.builder()
                         .orderId(orderResponse.getOrderId())
-                        .customerId(orderResponse.getCustomerId())
+                        .customers(orderResponse.getCustomer())
                         .products(orderResponse.getProduct())
                         .quantity(orderResponse.getQuantity())
                         .status(OrderStatusEnum.ACCEPTED.toString()).build());
@@ -153,6 +182,12 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    /**
+     * Order Service to accept order by Customer Id
+     * @param customerId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public List<OrderResponse> acceptOrderByCustomerId(Integer customerId) throws NotFoundException {
         try {

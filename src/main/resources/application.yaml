@@ -1,6 +1,7 @@
 spring:
   application:
     name: Product Microservice
+    version: 1.0
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -12,10 +13,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL5Dialect
-
-# Springdoc version
-springdoc:
-  version: 1.5.9
 
 # Enable health check details
 management:

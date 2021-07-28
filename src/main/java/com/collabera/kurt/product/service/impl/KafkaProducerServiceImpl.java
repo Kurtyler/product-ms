@@ -19,6 +19,10 @@ public class KafkaProducerServiceImpl implements KafkaProducerService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    /**
+     * Kafka Service to publish topic and message
+     * @param message
+     */
     @Override
     public void publishToTopic(String message) {
         log.info("Publishing to {}, {}", TOPIC, message);

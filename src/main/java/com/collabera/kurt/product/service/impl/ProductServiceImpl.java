@@ -30,6 +30,10 @@ public class ProductServiceImpl implements ProductService {
         this.kafkaProducerService = kafkaProducerService;
     }
 
+    /**
+     * Product Service to fetch all products
+     * @return
+     */
     @Override
     public List<ProductResponse> getProducts() {
         kafkaProducerService.publishToTopic("Attempting to fetch all products");
@@ -40,6 +44,11 @@ public class ProductServiceImpl implements ProductService {
         return productResponseList;
     }
 
+    /**
+     * Product Service to save product
+     * @param productRequest
+     * @return
+     */
     @Override
     public ProductResponse saveProduct(final ProductRequest productRequest) {
         ProductResponse productResponse = new ProductResponse();
@@ -61,6 +70,13 @@ public class ProductServiceImpl implements ProductService {
         return productResponse;
     }
 
+    /**
+     * Product Service to update product by Product Id
+     * @param productRequest
+     * @param productId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public ProductResponse updateProduct(final ProductRequest productRequest, final Integer productId)
             throws NotFoundException {
@@ -86,6 +102,12 @@ public class ProductServiceImpl implements ProductService {
         return productResponse;
     }
 
+    /**
+     * Product Service to fetch product by Product Id
+     * @param productId
+     * @return
+     * @throws NotFoundException
+     */
     @Override
     public ProductResponse getProductById(final Integer productId) throws NotFoundException {
         final ProductResponse productResponse = new ProductResponse();
