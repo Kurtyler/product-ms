@@ -3,10 +3,12 @@ package com.collabera.kurt.product.service.impl;
 import com.collabera.kurt.product.dto.request.CustomerRequest;
 import com.collabera.kurt.product.dto.response.CustomerResponse;
 import com.collabera.kurt.product.entity.Customer;
+import com.collabera.kurt.product.exception.InvalidInputException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.CustomerRepository;
 import com.collabera.kurt.product.service.CustomerService;
 import com.collabera.kurt.product.service.KafkaProducerService;
+import com.collabera.kurt.product.service.RequestValidatorService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,10 +22,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final KafkaProducerService kafkaProducerService;
 
+    private final RequestValidatorService requestValidatorService;
+
     public CustomerServiceImpl(final CustomerRepository customerRepository,
-                               final KafkaProducerService kafkaProducerService) {
+                               final KafkaProducerService kafkaProducerService,
+                               final RequestValidatorService requestValidatorService) {
         this.customerRepository = customerRepository;
         this.kafkaProducerService = kafkaProducerService;
+        this.requestValidatorService = requestValidatorService;
     }
 
     /**
@@ -32,10 +38,11 @@ public class CustomerServiceImpl implements CustomerService {
      * @return
      */
     @Override
-    public CustomerResponse addCustomer(final CustomerRequest customerRequest) {
-        CustomerResponse customerResponse = new CustomerResponse();
+    public CustomerResponse addCustomer(final CustomerRequest customerRequest) throws InvalidInputException {
+        CustomerResponse customerResponse;
         try {
             kafkaProducerService.publishToTopic("Attempting to add customer with request: " + customerRequest);
+            requestValidatorService.validateRequest(customerRequest);
             customerResponse = new CustomerResponse(
                     customerRepository.save(Customer.builder()
                             .name(customerRequest.getName())
@@ -46,6 +53,7 @@ public class CustomerServiceImpl implements CustomerService {
 
         } catch (final Exception exception) {
             kafkaProducerService.publishToTopic("Failed to save customer with error: " + exception.getMessage());
+            throw new InvalidInputException(exception.getMessage());
         }
         return customerResponse;
     }
@@ -104,11 +112,12 @@ public class CustomerServiceImpl implements CustomerService {
      */
     @Override
     public CustomerResponse updateCustomer(final CustomerRequest customerRequest, final Integer customerId)
-            throws NotFoundException {
-        CustomerResponse customerResponse;
+            throws NotFoundException, InvalidInputException {
+        CustomerResponse customerResponse = new CustomerResponse();
         try {
             kafkaProducerService.publishToTopic(
                     "Attempting to update product with request: " + customerRequest.toString());
+            requestValidatorService.validateRequest(customerRequest);
             this.getCustomerById(customerId);
             customerResponse = new CustomerResponse(
                     customerRepository.save(Customer.builder()
@@ -122,7 +131,12 @@ public class CustomerServiceImpl implements CustomerService {
 
         } catch (final Exception exception) {
             kafkaProducerService.publishToTopic("Failed to update customer with error: " + exception.getMessage());
-            throw new NotFoundException(exception.getMessage());
+            if(exception instanceof NotFoundException) {
+                throw new NotFoundException(exception.getMessage());
+
+            } else if (exception instanceof InvalidInputException) {
+                throw new InvalidInputException(exception.getMessage());
+            }
         }
         return customerResponse;
     }
