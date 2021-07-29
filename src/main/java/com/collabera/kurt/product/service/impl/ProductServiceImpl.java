@@ -3,10 +3,12 @@ package com.collabera.kurt.product.service.impl;
 import com.collabera.kurt.product.dto.request.ProductRequest;
 import com.collabera.kurt.product.dto.response.ProductResponse;
 import com.collabera.kurt.product.entity.Product;
+import com.collabera.kurt.product.exception.InvalidInputException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.ProductRepository;
 import com.collabera.kurt.product.service.KafkaProducerService;
 import com.collabera.kurt.product.service.ProductService;
+import com.collabera.kurt.product.service.RequestValidatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,13 +23,15 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final KafkaProducerService kafkaProducerService;
-
+    private final RequestValidatorService requestValidatorService;
 
     @Autowired
     public ProductServiceImpl(final ProductRepository productRepository,
-                              final KafkaProducerService kafkaProducerService) {
+                              final KafkaProducerService kafkaProducerService,
+                              final RequestValidatorService requestValidatorService) {
         this.productRepository = productRepository;
         this.kafkaProducerService = kafkaProducerService;
+        this.requestValidatorService = requestValidatorService;
     }
 
     /**
@@ -50,11 +54,13 @@ public class ProductServiceImpl implements ProductService {
      * @return
      */
     @Override
-    public ProductResponse saveProduct(final ProductRequest productRequest) {
-        ProductResponse productResponse = new ProductResponse();
+    public ProductResponse saveProduct(final ProductRequest productRequest) throws InvalidInputException {
+        ProductResponse productResponse;
+
         try {
             kafkaProducerService.publishToTopic(
                     "Attempting to save product with request: " + productRequest);
+            requestValidatorService.validateRequest(productRequest);
             productResponse = new ProductResponse(
                     productRepository.save(Product.builder()
                             .productName(productRequest.getProductName())
@@ -66,6 +72,7 @@ public class ProductServiceImpl implements ProductService {
 
         } catch (Exception exception) {
             kafkaProducerService.publishToTopic("Failed to save product with error: " + exception.getMessage());
+            throw new InvalidInputException(exception.getMessage());
         }
         return productResponse;
     }
@@ -79,11 +86,13 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public ProductResponse updateProduct(final ProductRequest productRequest, final Integer productId)
-            throws NotFoundException {
-        ProductResponse productResponse;
+            throws NotFoundException, InvalidInputException {
+        ProductResponse productResponse = new ProductResponse();
+
         try {
             kafkaProducerService.publishToTopic(
                     "Attempting to update product with request: " + productRequest.toString());
+            requestValidatorService.validateRequest(productRequest);
             this.getProductById(productId);
             productResponse = new ProductResponse(
                     productRepository.save(Product.builder()
@@ -97,7 +106,11 @@ public class ProductServiceImpl implements ProductService {
 
         } catch (Exception exception) {
             kafkaProducerService.publishToTopic("Failed to update product with error: " + exception.getMessage());
-            throw new NotFoundException(exception.getMessage());
+            if (exception instanceof NotFoundException) {
+                throw new NotFoundException(exception.getMessage());
+            } else if (exception instanceof InvalidInputException) {
+                throw new InvalidInputException(exception.getMessage());
+            }
         }
         return productResponse;
     }
@@ -132,6 +145,4 @@ public class ProductServiceImpl implements ProductService {
         }
         return productResponse;
     }
-
-
 }

@@ -12,10 +12,7 @@ import com.collabera.kurt.product.exception.InvalidInputException;
 import com.collabera.kurt.product.exception.InvalidOrderException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.OrderRepository;
-import com.collabera.kurt.product.service.CustomerService;
-import com.collabera.kurt.product.service.KafkaProducerService;
-import com.collabera.kurt.product.service.OrderService;
-import com.collabera.kurt.product.service.ProductService;
+import com.collabera.kurt.product.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -35,14 +32,18 @@ public class OrderServiceImpl implements OrderService {
 
     private final KafkaProducerService kafkaProducerService;
 
+    private final RequestValidatorService requestValidatorService;
+
     public OrderServiceImpl(final OrderRepository orderRepository,
                             final ProductService productService,
                             final CustomerService customerService,
-                            final KafkaProducerService kafkaProducerService) {
+                            final KafkaProducerService kafkaProducerService,
+                            final RequestValidatorService requestValidatorService) {
         this.orderRepository = orderRepository;
         this.productService = productService;
         this.customerService = customerService;
         this.kafkaProducerService = kafkaProducerService;
+        this.requestValidatorService = requestValidatorService;
     }
 
     /**
@@ -56,10 +57,11 @@ public class OrderServiceImpl implements OrderService {
         final OrderResponse orderResponse;
         try {
             kafkaProducerService.publishToTopic("Attempting to add order with request: " + orderRequest);
+            requestValidatorService.validateRequest(orderRequest);
             final CustomerResponse customerResponse = customerService.getCustomerById(orderRequest.getCustomerId());
             final ProductResponse product = productService.getProductById(orderRequest.getProductId());
             if (orderRequest.getQuantity() < 1) {
-                throw new InvalidInputException("Invalid Quantity: " + orderRequest.getQuantity());
+                throw new InvalidInputException("Value for field quantity cannot be: " + orderRequest.getQuantity());
             }
             orderResponse = new OrderResponse(orderRepository.save(Order.builder()
                     .customers(Customer.builder().customerId(customerResponse.getCustomerId())
