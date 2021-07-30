@@ -113,7 +113,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerResponse updateCustomer(final CustomerRequest customerRequest, final Integer customerId)
             throws NotFoundException, InvalidInputException {
-        CustomerResponse customerResponse = new CustomerResponse();
+        CustomerResponse customerResponse;
         try {
             kafkaProducerService.publishToTopic(
                     "Attempting to update product with request: " + customerRequest.toString());
@@ -128,16 +128,17 @@ public class CustomerServiceImpl implements CustomerService {
                             .build()));
             kafkaProducerService.publishToTopic(
                     "Successfully updated customer with response: " + customerResponse.toString());
+        } catch(NotFoundException notFoundException){
+            kafkaProducerService.publishToTopic("Failed to update customer with error: "
+                    + notFoundException.getMessage());
+            throw new NotFoundException(notFoundException.getMessage());
 
-        } catch (final Exception exception) {
-            kafkaProducerService.publishToTopic("Failed to update customer with error: " + exception.getMessage());
-            if(exception instanceof NotFoundException) {
-                throw new NotFoundException(exception.getMessage());
-
-            } else if (exception instanceof InvalidInputException) {
-                throw new InvalidInputException(exception.getMessage());
-            }
+        } catch (InvalidInputException invalidInputException) {
+            kafkaProducerService.publishToTopic("Failed to update customer with error: "
+                    + invalidInputException.getMessage());
+            throw new InvalidInputException(invalidInputException.getMessage());
         }
+
         return customerResponse;
     }
 }

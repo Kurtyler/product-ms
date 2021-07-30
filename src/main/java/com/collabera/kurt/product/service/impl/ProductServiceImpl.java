@@ -87,7 +87,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse updateProduct(final ProductRequest productRequest, final Integer productId)
             throws NotFoundException, InvalidInputException {
-        ProductResponse productResponse = new ProductResponse();
+        ProductResponse productResponse;
 
         try {
             kafkaProducerService.publishToTopic(
@@ -104,13 +104,15 @@ public class ProductServiceImpl implements ProductService {
             kafkaProducerService.publishToTopic(
                     "Successfully updated product with response: " + productResponse.toString());
 
-        } catch (Exception exception) {
-            kafkaProducerService.publishToTopic("Failed to update product with error: " + exception.getMessage());
-            if (exception instanceof NotFoundException) {
-                throw new NotFoundException(exception.getMessage());
-            } else if (exception instanceof InvalidInputException) {
-                throw new InvalidInputException(exception.getMessage());
-            }
+        } catch (final NotFoundException notFoundException) {
+            kafkaProducerService.publishToTopic(
+                    "Failed to update product with error: " + notFoundException.getMessage());
+            throw new NotFoundException(notFoundException.getMessage());
+
+        } catch (InvalidInputException invalidInputException) {
+            kafkaProducerService.publishToTopic(
+                    "Failed to update product with error: " + invalidInputException.getMessage());
+            throw new InvalidInputException(invalidInputException.getMessage());
         }
         return productResponse;
     }
