@@ -18,6 +18,7 @@ import java.util.Optional;
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
+
     private final CustomerRepository customerRepository;
 
     private final KafkaProducerService kafkaProducerService;
@@ -49,7 +50,7 @@ public class CustomerServiceImpl implements CustomerService {
                             .email(customerRequest.getEmail())
                             .gender(customerRequest.getGender())
                             .build()));
-            kafkaProducerService.publishToTopic("Attempting added customer with response: " + customerResponse);
+            kafkaProducerService.publishToTopic("Successfully added customer with response: " + customerResponse);
 
         } catch (final Exception exception) {
             kafkaProducerService.publishToTopic("Failed to save customer with error: " + exception.getMessage());
