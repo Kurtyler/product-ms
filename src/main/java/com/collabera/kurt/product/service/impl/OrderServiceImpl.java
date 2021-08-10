@@ -179,9 +179,10 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<OrderResponse> acceptOrderByCustomerId(Integer customerId) throws NotFoundException {
-        final List<OrderResponse> orderResponses = new ArrayList<>();
+        final List<OrderResponse> acceptedOrders = new ArrayList<>();
         try {
             kafkaProducerService.publishToTopic(OrderMessage.ACCEPTING_CUSTOMER_ORDER.getDescription() + customerId);
+            final List<OrderResponse> orderResponses = new ArrayList<>();
             final List<OrderResponse> orderResponseList;
             orderResponseList = this.getOrderByCustomerId(customerId);
             orderResponseList.forEach(orderResponse -> {
@@ -192,17 +193,15 @@ public class OrderServiceImpl implements OrderService {
             if (orderResponses.isEmpty()) {
                 throw new NotFoundException(OrderMessage.NO_PENDING_CUSTOMER_ORDER.getDescription() + customerId);
             }
-
             for (OrderResponse orderResponse: orderResponses) {
-                this.acceptOrderById(orderResponse.getOrderId());
+                acceptedOrders.add(this.acceptOrderById(orderResponse.getOrderId()));
             }
             kafkaProducerService.publishToTopic(OrderMessage.ACCEPTED_CUSTOMER_ORDER.getDescription() + orderResponses);
-
         } catch (Exception exception) {
             kafkaProducerService.publishToTopic(
                     OrderMessage.FAILED_ACCEPTING_CUSTOMER_ORDER.getDescription() + exception.getMessage());
             throw new NotFoundException(exception.getMessage());
         }
-        return orderResponses;
+        return acceptedOrders;
     }
 }
