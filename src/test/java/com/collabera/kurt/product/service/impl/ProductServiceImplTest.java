@@ -53,7 +53,7 @@ class ProductServiceImplTest {
 
     @Test
     void saveProduct() throws InvalidRequestException {
-        when(productRepository.save(new Product())).thenReturn(Product.builder()
+        when(productRepository.save(any(Product.class))).thenReturn(Product.builder()
                 .productId(1)
                 .productName("Mango")
                 .productPrice(1.00)
