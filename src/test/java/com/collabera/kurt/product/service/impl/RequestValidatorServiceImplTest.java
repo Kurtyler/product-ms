@@ -1,7 +1,7 @@
 package com.collabera.kurt.product.service.impl;
 
 import com.collabera.kurt.product.dto.request.OrderRequest;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class RequestValidatorServiceImplTest {
     ObjectMapper objectMapper;
 
     @Test
-    void validateRequest() throws InvalidInputException {
+    void validateRequest() throws InvalidRequestException {
 
         Map<String, String> map = new ConcurrentHashMap<>();
         map.put("customerId", "1");
@@ -49,6 +49,6 @@ class RequestValidatorServiceImplTest {
 
         when(objectMapper.convertValue(any(), any(TypeReference.class))).thenReturn(map);
 
-        assertThrows(InvalidInputException.class, () -> requestValidatorService.validateRequest(new OrderRequest()));
+        assertThrows(InvalidRequestException.class, () -> requestValidatorService.validateRequest(new OrderRequest()));
     }
 }

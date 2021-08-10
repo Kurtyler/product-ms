@@ -1,13 +1,11 @@
 package com.collabera.kurt.product.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,12 +15,16 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false, unique = true)
     private Integer productId;
 
+    @Column(nullable = false)
     private String productName;
 
+    @Column(nullable = false)
     private Double productPrice;
 
+    @Column(nullable = false)
     private String productDescription;
 
 }

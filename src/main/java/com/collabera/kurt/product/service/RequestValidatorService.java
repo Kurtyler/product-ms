@@ -1,8 +1,8 @@
 package com.collabera.kurt.product.service;
 
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 
 public interface RequestValidatorService {
 
-    void validateRequest(Object object) throws InvalidInputException;
+    void validateRequest(Object object) throws InvalidRequestException;
 }

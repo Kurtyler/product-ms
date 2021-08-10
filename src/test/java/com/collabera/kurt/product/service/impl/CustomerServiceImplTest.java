@@ -3,7 +3,7 @@ package com.collabera.kurt.product.service.impl;
 import com.collabera.kurt.product.dto.request.CustomerRequest;
 import com.collabera.kurt.product.dto.response.CustomerResponse;
 import com.collabera.kurt.product.entity.Customer;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.CustomerRepository;
 import com.collabera.kurt.product.service.KafkaProducerService;
@@ -38,7 +38,7 @@ class CustomerServiceImplTest {
     CustomerRepository customerRepository;
 
     @Test
-    void addCustomer() throws InvalidInputException {
+    void addCustomer() throws InvalidRequestException {
 
         Customer customer = new Customer();
         customer.setCustomerId(1);
@@ -59,8 +59,8 @@ class CustomerServiceImplTest {
     }
 
     @Test()
-    void throwException() throws InvalidInputException {
-        assertThrows(InvalidInputException.class, () -> customerService.addCustomer(new CustomerRequest()));
+    void throwException() throws InvalidRequestException {
+        assertThrows(InvalidRequestException.class, () -> customerService.addCustomer(new CustomerRequest()));
 
         assertThrows(NotFoundException.class, () -> customerService.getCustomerById(anyInt()));
 
@@ -68,8 +68,8 @@ class CustomerServiceImplTest {
 
         when(customerRepository.findById(anyInt())).thenReturn(Optional.of(new Customer()));
         when(customerRepository.save(any(Customer.class))).thenReturn(new Customer());
-        doThrow(InvalidInputException.class).when(requestValidatorService).validateRequest(new CustomerRequest());
-        assertThrows(InvalidInputException.class, () -> customerService.updateCustomer(
+        doThrow(InvalidRequestException.class).when(requestValidatorService).validateRequest(new CustomerRequest());
+        assertThrows(InvalidRequestException.class, () -> customerService.updateCustomer(
                 new CustomerRequest(), 1));
     }
 
@@ -112,7 +112,7 @@ class CustomerServiceImplTest {
     }
 
     @Test
-    void updateCustomer() throws NotFoundException, InvalidInputException {
+    void updateCustomer() throws NotFoundException, InvalidRequestException {
 
         Customer customer = new Customer();
         customer.setCustomerId(1);

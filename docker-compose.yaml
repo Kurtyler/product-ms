@@ -15,8 +15,6 @@ services:
       - 9092:9092
     depends_on:
       - zookeeper
-    links:
-      - zookeeper:zookeeper
     environment:
       KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -24,8 +22,7 @@ services:
   mysql:
     image: 'mysql:5.7'
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_PASSWORD=pass
+      - MYSQL_ROOT_PASSWORD=pogiako12
       - MYSQL_DATABASE=productDb
     ports:
       - "3307:3306"
@@ -36,12 +33,10 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/productDb?autoReconnect=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: "root"
-      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_DATASOURCE_PASSWORD: "pogiako12"
     depends_on:
       - mysql
       - kafka
-    links:
-      - kafka:kafka
   logger-ms:
     image: johnkurttyler/logger-ms
     ports:
@@ -49,12 +44,10 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/productDb?autoReconnect=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: "root"
-      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_DATASOURCE_PASSWORD: "pogiako12"
     depends_on:
       - mysql
       - kafka
-    links:
-      - kafka:kafka
 
 
 

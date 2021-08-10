@@ -28,16 +28,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(apiErrorResponse, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(InvalidInputException.class)
+    @ExceptionHandler(InvalidRequestException.class)
     public final ResponseEntity<ApiErrorResponse> handleInvalidInputException(
-            final InvalidInputException ex,
+            final InvalidRequestException ex,
             final HandlerMethod handlerMethod
     ) {
 
-        log.error("[InvalidInputException] Handler: {} Message: {}",
+        log.error("[InvalidRequestException] Handler: {} Message: {}",
                 handlerMethod.getMethod().getDeclaringClass(), ex.getMessage());
 
-        final ApiErrorResponse apiErrorResponse = new ApiErrorResponse("Invalid input exception", ex.getMessage());
+        final ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
+                "Invalid Request Exception", ex.getMessage());
         apiErrorResponse.setCode(ex.toCode());
 
         return new ResponseEntity<>(apiErrorResponse, HttpStatus.BAD_REQUEST);

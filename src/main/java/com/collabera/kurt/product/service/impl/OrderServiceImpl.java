@@ -7,12 +7,14 @@ import com.collabera.kurt.product.dto.response.ProductResponse;
 import com.collabera.kurt.product.entity.Customer;
 import com.collabera.kurt.product.entity.Order;
 import com.collabera.kurt.product.entity.Product;
-import com.collabera.kurt.product.enums.OrderStatusEnum;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.enums.OrderMessage;
+import com.collabera.kurt.product.enums.OrderStatus;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.InvalidOrderException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.OrderRepository;
 import com.collabera.kurt.product.service.*;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,29 +24,14 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
-
     private final ProductService productService;
-
     private final CustomerService customerService;
-
     private final KafkaProducerService kafkaProducerService;
-
     private final RequestValidatorService requestValidatorService;
-
-    public OrderServiceImpl(final OrderRepository orderRepository,
-                            final ProductService productService,
-                            final CustomerService customerService,
-                            final KafkaProducerService kafkaProducerService,
-                            final RequestValidatorService requestValidatorService) {
-        this.orderRepository = orderRepository;
-        this.productService = productService;
-        this.customerService = customerService;
-        this.kafkaProducerService = kafkaProducerService;
-        this.requestValidatorService = requestValidatorService;
-    }
 
     /**
      * Order Service to add order
@@ -56,12 +43,13 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse addOrder(final OrderRequest orderRequest) throws InvalidOrderException {
         final OrderResponse orderResponse;
         try {
-            kafkaProducerService.publishToTopic("Attempting to add order with request: " + orderRequest);
+            kafkaProducerService.publishToTopic(OrderMessage.SAVING_ORDER.getDescription() + orderRequest);
             requestValidatorService.validateRequest(orderRequest);
             final CustomerResponse customerResponse = customerService.getCustomerById(orderRequest.getCustomerId());
             final ProductResponse product = productService.getProductById(orderRequest.getProductId());
             if (orderRequest.getQuantity() < 1) {
-                throw new InvalidInputException("Value for field quantity cannot be: " + orderRequest.getQuantity());
+                throw new InvalidRequestException(
+                        OrderMessage.ORDER_INVALID_REQUEST.getDescription() + orderRequest.getQuantity());
             }
             orderResponse = new OrderResponse(orderRepository.save(Order.builder()
                     .customers(Customer.builder().customerId(customerResponse.getCustomerId())
@@ -75,11 +63,12 @@ public class OrderServiceImpl implements OrderService {
                             .productPrice(product.getProductPrice())
                             .productDescription(product.getProductDescription())
                             .build())
-                    .status(OrderStatusEnum.PENDING.toString()).build()));
-            kafkaProducerService.publishToTopic("Successfully added order with response: " + orderResponse);
+                    .status(OrderStatus.PENDING.toString()).build()));
+            kafkaProducerService.publishToTopic(OrderMessage.SAVED_ORDER.getDescription() + orderResponse);
 
         } catch (final Exception exception) {
-            kafkaProducerService.publishToTopic("Failed to add order with error: " + exception.getMessage());
+            kafkaProducerService.publishToTopic(
+                    OrderMessage.FAILED_SAVING_ORDER.getDescription()+ exception.getMessage());
             throw new InvalidOrderException(exception.getMessage());
         }
         return orderResponse;
@@ -95,23 +84,22 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse getOrderById(final Integer orderId) throws NotFoundException {
         final OrderResponse orderResponse = new OrderResponse();
         try {
-            kafkaProducerService.publishToTopic("Attempting to fetch order with orderId: " + orderId);
+            kafkaProducerService.publishToTopic(OrderMessage.FETCHING_ORDER.getDescription());
             final Optional<Order> orderData = orderRepository.findById(orderId);
-            if (orderData.isPresent()) {
-                orderResponse.setOrderId(orderData.get().getOrderId());
-                orderResponse.setCustomer(orderData.get().getCustomers());
-                orderResponse.setProduct(orderData.get().getProducts());
-                orderResponse.setQuantity(orderData.get().getQuantity());
-                orderResponse.setStatus(orderData.get().getStatus());
-                kafkaProducerService.publishToTopic("Successfully fetched order with response: " + orderResponse);
-
-            } else {
-                kafkaProducerService.publishToTopic(
-                        "Failed to fetch order with error: Order not found with orderId " + orderId);
+            if (!orderData.isPresent()) {
                 throw new NotFoundException("Order not found with orderId: " + orderId);
             }
 
+            orderResponse.setOrderId(orderData.get().getOrderId());
+            orderResponse.setCustomer(orderData.get().getCustomers());
+            orderResponse.setProduct(orderData.get().getProducts());
+            orderResponse.setQuantity(orderData.get().getQuantity());
+            orderResponse.setStatus(orderData.get().getStatus());
+            kafkaProducerService.publishToTopic(OrderMessage.FETCHED_ORDER.getDescription() + orderResponse);
+
         } catch (final Exception exception) {
+            kafkaProducerService.publishToTopic(
+                    OrderMessage.FAILED_FETCHING_ORDER.getDescription() + exception.getMessage());
             throw new NotFoundException(exception.getMessage());
         }
         return orderResponse;
@@ -125,23 +113,22 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<OrderResponse> getOrderByCustomerId(final Integer customerId) throws NotFoundException {
-        kafkaProducerService.publishToTopic(
-                "Attempting to fetch customer order with customerId: " + customerId);
+        kafkaProducerService.publishToTopic(OrderMessage.FETCHING_CUSTOMER_ORDER.getDescription() + customerId);
         final List<OrderResponse> orderResponseList = new ArrayList<>();
         try {
             final CustomerResponse customerResponse = customerService.getCustomerById(customerId);
             List<Order> orderData = orderRepository.findOrderByCustomersCustomerId(customerResponse.getCustomerId());
-            if (!orderData.isEmpty()) {
-                orderData.forEach(order -> orderResponseList.add(new OrderResponse(order)));
-            } else {
-                throw new NotFoundException("Customer order not found for customer with id: " + customerId);
+            if (orderData.isEmpty()) {
+                throw new NotFoundException(OrderMessage.CUSTOMER_ORDER_NOT_FOUND.getDescription() + customerId);
             }
+
+            orderData.forEach(order -> orderResponseList.add(new OrderResponse(order)));
             kafkaProducerService.publishToTopic(
-                    "Successfully to fetched customer order with response: " + orderResponseList);
+                    OrderMessage.FETCHED_CUSTOMER_ORDER.getDescription() + orderResponseList);
 
         } catch (final Exception exception) {
             kafkaProducerService.publishToTopic(
-                    "Failed to fetch customer order with error: " + exception.getMessage());
+                    OrderMessage.FAILED_FETCHING_CUSTOMER_ORDER.getDescription() + exception.getMessage());
             throw new NotFoundException(exception.getMessage());
         }
         return orderResponseList;
@@ -157,28 +144,28 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse acceptOrderById(final Integer orderId) throws InvalidOrderException {
         final OrderResponse orderResponse;
         try {
-            kafkaProducerService.publishToTopic("Attempting to accept order with orderId: " + orderId);
+            kafkaProducerService.publishToTopic(OrderMessage.ACCEPTING_ORDER.getDescription() + orderId);
             orderResponse = this.getOrderById(orderId);
-            if (orderResponse.getStatus().equals(OrderStatusEnum.PENDING.toString())) {
-                orderResponse.setOrderId(orderId);
-                orderResponse.setCustomer(orderResponse.getCustomer());
-                orderResponse.setProduct(orderResponse.getProduct());
-                orderResponse.setQuantity(orderResponse.getQuantity());
-                orderResponse.setStatus(OrderStatusEnum.ACCEPTED.toString());
-                orderRepository.save(Order.builder()
-                        .orderId(orderResponse.getOrderId())
-                        .customers(orderResponse.getCustomer())
-                        .products(orderResponse.getProduct())
-                        .quantity(orderResponse.getQuantity())
-                        .status(OrderStatusEnum.ACCEPTED.toString()).build());
-
-            } else {
-                throw new InvalidInputException("Order already ACCEPTED with order id: " + orderId);
+            if (!orderResponse.getStatus().equals(OrderStatus.PENDING.toString())) {
+                throw new InvalidRequestException(OrderMessage.ORDER_ALREADY_ACCEPTED.getDescription() + orderId);
             }
-            kafkaProducerService.publishToTopic("Successfully accepted order with response: " + orderResponse);
+
+            orderResponse.setOrderId(orderId);
+            orderResponse.setCustomer(orderResponse.getCustomer());
+            orderResponse.setProduct(orderResponse.getProduct());
+            orderResponse.setQuantity(orderResponse.getQuantity());
+            orderResponse.setStatus(OrderStatus.ACCEPTED.toString());
+            orderRepository.save(Order.builder()
+                    .orderId(orderResponse.getOrderId())
+                    .customers(orderResponse.getCustomer())
+                    .products(orderResponse.getProduct())
+                    .quantity(orderResponse.getQuantity())
+                    .status(OrderStatus.ACCEPTED.toString()).build());
+            kafkaProducerService.publishToTopic(OrderMessage.ACCEPTED_ORDER.getDescription() + orderResponse);
 
         } catch (final Exception exception) {
-            kafkaProducerService.publishToTopic("Failed to accept order with error: " + exception.getMessage());
+            kafkaProducerService.publishToTopic(
+                    OrderMessage.FAILED_ACCEPTING_ORDER.getDescription() + exception.getMessage());
             throw new InvalidOrderException(exception.getMessage());
         }
         return orderResponse;
@@ -192,31 +179,30 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<OrderResponse> acceptOrderByCustomerId(Integer customerId) throws NotFoundException {
+        final List<OrderResponse> orderResponses = new ArrayList<>();
         try {
-            kafkaProducerService.publishToTopic(
-                    "Attempting to accept customer order/s with customerId: " + customerId);
+            kafkaProducerService.publishToTopic(OrderMessage.ACCEPTING_CUSTOMER_ORDER.getDescription() + customerId);
             final List<OrderResponse> orderResponseList;
-            final List<OrderResponse> orderResponses = new ArrayList<>();
             orderResponseList = this.getOrderByCustomerId(customerId);
             orderResponseList.forEach(orderResponse -> {
-                if (orderResponse.getStatus().equals(OrderStatusEnum.PENDING.toString())) {
+                if (orderResponse.getStatus().equals(OrderStatus.PENDING.toString())) {
                     orderResponses.add(orderResponse);
                 }
             });
             if (orderResponses.isEmpty()) {
-                throw new NotFoundException("No order/s to be accepted for customer id: " + customerId);
+                throw new NotFoundException(OrderMessage.NO_PENDING_CUSTOMER_ORDER.getDescription() + customerId);
             }
 
             for (OrderResponse orderResponse: orderResponses) {
                 this.acceptOrderById(orderResponse.getOrderId());
             }
-            kafkaProducerService.publishToTopic(
-                    "Successfully accepted customer order/s with response: " + this.getOrderByCustomerId(customerId));
+            kafkaProducerService.publishToTopic(OrderMessage.ACCEPTED_CUSTOMER_ORDER.getDescription() + orderResponses);
+
         } catch (Exception exception) {
             kafkaProducerService.publishToTopic(
-                    "Failed to accept customer order/s with error: " + exception.getMessage());
+                    OrderMessage.FAILED_ACCEPTING_CUSTOMER_ORDER.getDescription() + exception.getMessage());
             throw new NotFoundException(exception.getMessage());
         }
-        return this.getOrderByCustomerId(customerId);
+        return orderResponses;
     }
 }
