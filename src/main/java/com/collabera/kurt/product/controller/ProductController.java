@@ -2,7 +2,7 @@ package com.collabera.kurt.product.controller;
 
 import com.collabera.kurt.product.dto.request.ProductRequest;
 import com.collabera.kurt.product.dto.response.ProductResponse;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,7 +28,7 @@ public class ProductController {
     @Operation(summary = "This is to add product")
     @PostMapping("/addProduct")
     public ResponseEntity<ProductResponse> saveProduct(@RequestBody final ProductRequest productRequest)
-            throws InvalidInputException {
+            throws InvalidRequestException {
         return ResponseEntity.status(HttpStatus.OK).body(productService.saveProduct(productRequest));
     }
 
@@ -43,7 +43,7 @@ public class ProductController {
     @PutMapping("/updateProduct/{productId}")
     public ResponseEntity<ProductResponse> updateProduct(@RequestBody final ProductRequest productRequest,
                                            @PathVariable("productId") Integer productId)
-            throws NotFoundException, InvalidInputException {
+            throws NotFoundException, InvalidRequestException {
         return ResponseEntity.status(HttpStatus.OK).body(productService.updateProduct(productRequest, productId));
     }
 

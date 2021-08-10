@@ -2,7 +2,7 @@ package com.collabera.kurt.product.controller;
 
 import com.collabera.kurt.product.dto.request.OrderRequest;
 import com.collabera.kurt.product.dto.response.OrderResponse;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.InvalidOrderException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.service.OrderService;
@@ -28,7 +28,7 @@ public class OrderController {
     @Operation(summary = "This is to add order")
     @PostMapping("/addOrder")
     public ResponseEntity<OrderResponse> addOrder(@RequestBody final OrderRequest orderRequest)
-            throws NotFoundException, InvalidInputException, InvalidOrderException {
+            throws NotFoundException, InvalidRequestException, InvalidOrderException {
         return ResponseEntity.status(HttpStatus.OK).body(orderService.addOrder(orderRequest));
     }
 

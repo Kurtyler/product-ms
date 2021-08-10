@@ -1,12 +1,9 @@
 package com.collabera.kurt.product.service.impl;
 
-import com.collabera.kurt.product.dto.request.CustomerRequest;
 import com.collabera.kurt.product.dto.request.ProductRequest;
-import com.collabera.kurt.product.dto.response.CustomerResponse;
 import com.collabera.kurt.product.dto.response.ProductResponse;
-import com.collabera.kurt.product.entity.Customer;
 import com.collabera.kurt.product.entity.Product;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.ProductRepository;
 import com.collabera.kurt.product.service.KafkaProducerService;
@@ -55,7 +52,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void saveProduct() throws InvalidInputException {
+    void saveProduct() throws InvalidRequestException {
         when(productRepository.save(new Product())).thenReturn(Product.builder()
                 .productId(1)
                 .productName("Mango")
@@ -72,8 +69,8 @@ class ProductServiceImplTest {
     }
 
     @Test
-    void exceptionThrows() throws InvalidInputException {
-        assertThrows(InvalidInputException.class, () -> productService.saveProduct(new ProductRequest()));
+    void exceptionThrows() throws InvalidRequestException {
+        assertThrows(InvalidRequestException.class, () -> productService.saveProduct(new ProductRequest()));
 
         assertThrows(NotFoundException.class, () -> productService.getProductById(anyInt()));
 
@@ -81,13 +78,13 @@ class ProductServiceImplTest {
 
         when(productRepository.findById(anyInt())).thenReturn(Optional.of(new Product()));
         when(productRepository.save(any(Product.class))).thenReturn(new Product());
-        doThrow(InvalidInputException.class).when(requestValidatorService).validateRequest(new ProductRequest());
-        assertThrows(InvalidInputException.class, () -> productService.updateProduct(
+        doThrow(InvalidRequestException.class).when(requestValidatorService).validateRequest(new ProductRequest());
+        assertThrows(InvalidRequestException.class, () -> productService.updateProduct(
                 new ProductRequest(), 1));
     }
 
     @Test
-    void updateProduct() throws InvalidInputException, NotFoundException {
+    void updateProduct() throws InvalidRequestException, NotFoundException {
         Product product = new Product();
         product.setProductId(1);
         product.setProductName("Mango");

@@ -1,6 +1,6 @@
 package com.collabera.kurt.product.enums;
 
-public enum OrderStatusEnum {
+public enum OrderStatus {
 
     PENDING,
     ACCEPTED

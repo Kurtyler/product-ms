@@ -7,19 +7,17 @@ import com.collabera.kurt.product.dto.response.ProductResponse;
 import com.collabera.kurt.product.entity.Customer;
 import com.collabera.kurt.product.entity.Order;
 import com.collabera.kurt.product.entity.Product;
-import com.collabera.kurt.product.exception.InvalidInputException;
+import com.collabera.kurt.product.enums.OrderStatus;
+import com.collabera.kurt.product.exception.InvalidRequestException;
 import com.collabera.kurt.product.exception.InvalidOrderException;
 import com.collabera.kurt.product.exception.NotFoundException;
 import com.collabera.kurt.product.repository.CustomerRepository;
 import com.collabera.kurt.product.repository.OrderRepository;
-import com.collabera.kurt.product.repository.ProductRepository;
 import com.collabera.kurt.product.service.*;
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
@@ -55,7 +53,7 @@ class OrderServiceImplTest {
     ProductService productService;
 
     @Test
-    void addOrder() throws InvalidInputException, NotFoundException, InvalidOrderException {
+    void addOrder() throws InvalidRequestException, NotFoundException, InvalidOrderException {
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
 
@@ -70,7 +68,7 @@ class OrderServiceImplTest {
                 .customers(new Customer())
                 .products(new Product())
                 .quantity(1)
-                .status("PENDING")
+                .status(OrderStatus.PENDING.toString())
                 .build());
 
         OrderRequest orderRequest = new OrderRequest();
@@ -84,7 +82,7 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void addOrderThrowsInvalidInput() throws NotFoundException, InvalidInputException, InvalidOrderException {
+    void addOrderThrowsInvalidInput() throws NotFoundException, InvalidRequestException, InvalidOrderException {
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
 
         doNothing().when(requestValidatorService).validateRequest(any());
@@ -98,7 +96,7 @@ class OrderServiceImplTest {
                 .customers(new Customer())
                 .products(new Product())
                 .quantity(1)
-                .status("PENDING")
+                .status(OrderStatus.PENDING.toString())
                 .build());
 
         OrderRequest orderRequest = new OrderRequest();
@@ -176,7 +174,7 @@ class OrderServiceImplTest {
         order.setCustomers(new Customer());
         order.setProducts(new Product());
         order.setQuantity(1);
-        order.setStatus("PENDING");
+        order.setStatus(OrderStatus.PENDING.toString());
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
 
@@ -189,11 +187,11 @@ class OrderServiceImplTest {
                 .customers(new Customer())
                 .products(new Product())
                 .quantity(1)
-                .status("ACCEPTED")
+                .status(OrderStatus.ACCEPTED.toString())
                 .build());
         OrderResponse orderResponse = orderService.acceptOrderById(1);
 
-        assertEquals("ACCEPTED", orderResponse.getStatus());
+        assertEquals(OrderStatus.ACCEPTED.toString(), orderResponse.getStatus());
 
     }
 
@@ -205,7 +203,7 @@ class OrderServiceImplTest {
         order.setCustomers(new Customer());
         order.setProducts(new Product());
         order.setQuantity(1);
-        order.setStatus("ACCEPTED");
+        order.setStatus(OrderStatus.ACCEPTED.toString());
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
 
@@ -223,7 +221,7 @@ class OrderServiceImplTest {
         order.setCustomers(new Customer());
         order.setProducts(new Product());
         order.setQuantity(1);
-        order.setStatus("PENDING");
+        order.setStatus(OrderStatus.PENDING.toString());
 
         List<Order> orders = new ArrayList<>();
         orders.add(order);
@@ -247,7 +245,7 @@ class OrderServiceImplTest {
                 .customers(new Customer())
                 .products(new Product())
                 .quantity(1)
-                .status("ACCEPTED")
+                .status(OrderStatus.ACCEPTED.toString())
                 .build());
 
         orderService.acceptOrderById(anyInt());
@@ -265,7 +263,7 @@ class OrderServiceImplTest {
         order.setCustomers(new Customer());
         order.setProducts(new Product());
         order.setQuantity(1);
-        order.setStatus("ACCEPTED");
+        order.setStatus(OrderStatus.ACCEPTED.toString());
 
         List<Order> orders = new ArrayList<>();
         orders.add(order);

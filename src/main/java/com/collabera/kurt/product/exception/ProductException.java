@@ -1,6 +1,6 @@
 package com.collabera.kurt.product.exception;
 
-public class ProductException extends  Exception{
+public class ProductException extends Exception{
     private final String domain;
     private final String errorCode;
 
