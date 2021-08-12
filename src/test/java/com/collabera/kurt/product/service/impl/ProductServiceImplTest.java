@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {
 
     @InjectMocks
@@ -77,7 +76,7 @@ class ProductServiceImplTest {
         assertThrows(NotFoundException.class, () -> productService.updateProduct(new ProductRequest(), anyInt()));
 
         when(productRepository.findById(anyInt())).thenReturn(Optional.of(new Product()));
-        when(productRepository.save(any(Product.class))).thenReturn(new Product());
+
         doThrow(InvalidRequestException.class).when(requestValidatorService).validateRequest(new ProductRequest());
         assertThrows(InvalidRequestException.class, () -> productService.updateProduct(
                 new ProductRequest(), 1));
@@ -93,16 +92,15 @@ class ProductServiceImplTest {
 
         when(productRepository.save(any(Product.class))).thenReturn(product);
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
-        doNothing().when(requestValidatorService).validateRequest(new ProductRequest());
 
         when(productRepository.findById(anyInt())).thenReturn(java.util.Optional.of(product));
 
         ProductResponse productResponse1 = productService.getProductById(anyInt());
-
         ProductRequest productRequest = new ProductRequest();
         productRequest.setProductName(productResponse1.getProductName());
         productRequest.setProductPrice(productResponse1.getProductPrice());
         productRequest.setProductDescription(productResponse1.getProductDescription());
+        doNothing().when(requestValidatorService).validateRequest(productRequest);
         ProductResponse productResponse = productService.updateProduct(productRequest, product.getProductId());
 
         assertEquals(1, productResponse.getProductId());
