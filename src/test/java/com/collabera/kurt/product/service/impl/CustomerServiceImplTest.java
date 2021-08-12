@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class CustomerServiceImplTest {
 
     @InjectMocks
@@ -67,7 +67,7 @@ class CustomerServiceImplTest {
         assertThrows(NotFoundException.class, () -> customerService.updateCustomer(new CustomerRequest(), anyInt()));
 
         when(customerRepository.findById(anyInt())).thenReturn(Optional.of(new Customer()));
-        when(customerRepository.save(any(Customer.class))).thenReturn(new Customer());
+//        when(customerRepository.save(any(Customer.class))).thenReturn(new Customer());
         doThrow(InvalidRequestException.class).when(requestValidatorService).validateRequest(new CustomerRequest());
         assertThrows(InvalidRequestException.class, () -> customerService.updateCustomer(
                 new CustomerRequest(), 1));

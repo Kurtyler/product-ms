@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
 
     @InjectMocks
@@ -91,14 +92,6 @@ class OrderServiceImplTest {
 
         when(productService.getProductById(anyInt())).thenReturn(new ProductResponse());
 
-        when(orderRepository.save(any(Order.class))).thenReturn(Order.builder()
-                .orderId(1)
-                .customers(new Customer())
-                .products(new Product())
-                .quantity(1)
-                .status(OrderStatus.PENDING.toString())
-                .build());
-
         OrderRequest orderRequest = new OrderRequest();
         orderRequest.setCustomerId(1);
         orderRequest.setProductId(1);
@@ -138,8 +131,6 @@ class OrderServiceImplTest {
         orders.add(new Order());
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
-
-        when(customerRepository.findById(anyInt())).thenReturn(Optional.of(new Customer()));
 
         when(customerService.getCustomerById(anyInt())).thenReturn(new CustomerResponse());
 
@@ -228,8 +219,6 @@ class OrderServiceImplTest {
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
 
-        when(customerRepository.findById(anyInt())).thenReturn(Optional.of(new Customer()));
-
         when(customerService.getCustomerById(anyInt())).thenReturn(new CustomerResponse());
 
         when(orderRepository.findOrderByCustomersCustomerId(any())).thenReturn(orders);
@@ -269,8 +258,6 @@ class OrderServiceImplTest {
         orders.add(order);
 
         doNothing().when(kafkaProducerService).publishToTopic(anyString());
-
-        when(customerRepository.findById(anyInt())).thenReturn(Optional.of(new Customer()));
 
         when(customerService.getCustomerById(anyInt())).thenReturn(new CustomerResponse());
 
